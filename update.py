@@ -113,3 +113,30 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+import glob
+from icalendar import Calendar
+
+def merge_calendars(input_files, output_file):
+    master = Calendar()
+    master.add("prodid", "-//SEC Master Calendar//EN")
+    master.add("version", "2.0")
+
+    seen = set()
+    for file in input_files:
+        with open(file, "rb") as f:
+            cal = Calendar.from_ical(f.read())
+            for component in cal.walk():
+                if component.name == "VEVENT":
+                    uid = str(component.get("uid"))
+                    if uid not in seen:
+                        master.add_component(component)
+                        seen.add(uid)
+
+    with open(output_file, "wb") as f:
+        f.write(master.to_ical())
+
+# Merge all team calendars into sec_master.ics
+ics_files = glob.glob("docs/*.ics")
+merge_calendars(ics_files, "docs/sec_master.ics")
